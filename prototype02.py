@@ -5,7 +5,7 @@ from matplotlib.animation import FuncAnimation
 
 def free_fall_simulation():
     # Parameters
-    num_particles = 5        # Number of particles
+    num_particles = 50        # Number of particles
     tube_width = 50.0         # Width of the tube in cm
     tube_height = 25.0        # Height of the tube in cm
     particle_radius = 0.9     # Radius of particles in cm
@@ -14,6 +14,10 @@ def free_fall_simulation():
     simulation_time = 10.0    # Total simulation time (seconds)
     dt = 0.05                 # Time step (seconds)
     restitution = 0.8         # Coefficient of restitution for bouncing
+    drag_coefficient = 0.5    # Approximate drag coefficient (dimensionless)
+    air_density = 0.0012      # Air density in g/cm³ (approximate near sea level)
+    mass_aga = 500.0          # Approximate mass of the AGA in grams
+    frontal_area = 50.0       # Approximate cross-sectional area in cm²
     
     # Initialize particle positions
     particles_x = np.random.uniform(particle_radius, tube_width - particle_radius, num_particles)
@@ -28,9 +32,9 @@ def free_fall_simulation():
     ax.set_xlim(0, tube_width)
     ax.set_ylim(0, tube_height)
     ax.set_aspect('equal')
-    ax.set_title('Free Fall Simulation in Cylindrical Tube (Side View)')
-    ax.set_xlabel('Width (cm)')
-    ax.set_ylabel('Height (cm)')
+   # ax.set_title('Free Fall Simulation in Cylindrical Tube (Side View)')
+   # ax.set_xlabel('Width (cm)')
+   # ax.set_ylabel('Height (cm)')
 
     # Draw the tube
     tube = Rectangle((0, 0), tube_width, tube_height, edgecolor='black', facecolor='none', linewidth=2)
@@ -44,31 +48,50 @@ def free_fall_simulation():
         ax.add_patch(circle)
 
     # Status text
-    status_text = ax.text(tube_width / 2, tube_height - 5, '', ha='center', fontsize=14)
+    status_text = ax.text(tube_width / 2, tube_height - 5, '', ha='center', fontsize=12)
 
     # Time variable
     current_time = 0.0
     is_free_fall = False
+    velocity_chamber = 0.0  # Initial velocity of the chamber
+
+    # Function to calculate effective gravity inside chamber
+    def compute_geff(velocity):
+        drag_force = 0.5 * air_density * drag_coefficient * frontal_area * velocity**2
+        a_chamber = drag_force / mass_aga  # Acceleration due to drag
+        g_eff = gravity - a_chamber  # Effective gravity inside the chamber
+        return max(g_eff, 0)  # Ensure g_eff doesn't go negative
 
     # Function to update the animation
     def update(frame):
-        nonlocal current_time, is_free_fall
+        nonlocal current_time, is_free_fall, velocity_chamber
 
         # Check if free fall should start
         if current_time >= start_time and not is_free_fall:
             is_free_fall = True
             print(f"Free fall started at t = {current_time:.2f} seconds")
 
-        # Update status text
+        # Compute effective gravity
+        g_eff = compute_geff(velocity_chamber)
+
+        # Update status text (Combine everything into a single text update)
+        status_message = (
+            f"Time: {current_time:.2f} s\n"
+            #f"Gravity: {gravity} cm/s²\n"
+            #f"Coefficient of Restitution: {restitution}\n"
+            f"Effective Gravity (g_eff): {g_eff:.2f} cm/s²\n"
+            f"Free Fall: {'Active' if is_free_fall else 'Waiting'}"
+        )
+        status_text.set_text(status_message)
+
+        # Apply gravity if free fall has started
         if is_free_fall:
-            status_text.set_text(f'Anti Gravity: Active (t = {current_time:.2f} s)')
-            particles_vy[:] -= gravity * dt  # Apply anti gravity
-        else:
-            status_text.set_text(f'Waiting for Anti Gravity (t = {current_time:.2f} s, starts at {start_time:.2f} s)\n Gravity = {gravity:.1f} cm/s^2')
-            
-        # Update particle positions
+            velocity_chamber += gravity * dt  # Increase chamber velocity due to gravity
+            particles_vy[:] += gravity * dt  
+
+        # Update positions
         particles_x[:] += particles_vx[:] * dt
-        particles_y[:] -= particles_vy[:] * dt  # Gravity acts downward
+        particles_y[:] -= particles_vy[:] * dt  
 
         # Handle collisions with tube walls
         left_collision = particles_x < particle_radius
@@ -84,11 +107,6 @@ def free_fall_simulation():
         bottom_collision = particles_y < particle_radius
         particles_vy[bottom_collision] *= -restitution
         particles_y[bottom_collision] = particle_radius
-
-        # Handle collisions with the top
-        top_collision = particles_y > tube_height - particle_radius
-        particles_vy[top_collision] *= -restitution
-        particles_y[top_collision] = tube_height - particle_radius
 
         # Update particle positions in the animation
         for i in range(num_particles):
