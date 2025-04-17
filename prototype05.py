@@ -4,7 +4,7 @@ from matplotlib.patches import Circle, Rectangle
 from matplotlib.animation import FuncAnimation
 
 def free_fall_simulation():
-    # ### Simulation Parameters
+    # Simulation Parameters
     num_particles = 50         # Number of particles
     tube_width = 50.0          # Chamber width in cm
     tube_height = 25.0         # Chamber height in cm
@@ -17,7 +17,7 @@ def free_fall_simulation():
     particle_restitution = .2  # Elasticity for particle-particle collisions
     particle_mass = 100.0      # Mass of each particle in grams
 
-    # ### Initialize Particle Positions and Velocities
+    # Initialize Particle Positions and Velocities
     # Start particles near the top with small random motion
     particles_x = np.random.uniform(particle_radius, tube_width - particle_radius, num_particles)
     particles_y = np.random.uniform(tube_height - particle_radius - 5, tube_height - particle_radius, num_particles)
@@ -47,7 +47,7 @@ def free_fall_simulation():
     current_time = 0.0
     is_free_fall = False
 
-    # ### Function to Handle Particle-Particle Collisions
+    # Function to Handle Particle-Particle Collisions
     def handle_particle_collisions():
         for i in range(num_particles):
             for j in range(i + 1, num_particles):
@@ -72,7 +72,7 @@ def free_fall_simulation():
                         particles_vx[j] += impulse * nx
                         particles_vy[j] += impulse * ny
 
-    # ### Animation Update Function
+    # Animation Update Function
     def update(frame):
         nonlocal current_time, is_free_fall
 
@@ -138,11 +138,10 @@ def free_fall_simulation():
 
         return particle_circles + [status_text]
 
-    # ### Run the Animation
+# Run the Animation
     frames = int(simulation_time / dt)
     anim = FuncAnimation(fig, update, frames=frames, interval=20, repeat=False)
     plt.show()
-
-# ### Execute the Simulation
+# Execute the Simulation
 if __name__ == "__main__":
     free_fall_simulation()
